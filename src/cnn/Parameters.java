@@ -1,3 +1,4 @@
+package cnn;
 
 
 
@@ -16,7 +17,8 @@ public class Parameters implements Serializable{
 	  *   Out-of-vocabulary token string.
 	  */
 	  public static final String UNKNOWN = "-UNKN-";
-	  public static final String PADDING = "-PAD-";
+	  // sometimes the sentence is shorter than the window, so we need the padding word. 
+	  public static final String PADDING = "-PAD-"; 
 	  public static final String SEPARATOR = "###################";
 	
 	  /**

@@ -1,7 +1,11 @@
+package cnn;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
+
+import common.Sentence;
+import common.Util;
 
 
 public class CNN implements Serializable {

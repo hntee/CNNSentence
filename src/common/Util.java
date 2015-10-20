@@ -1,56 +1,41 @@
+package common;
 
 
-import static java.util.stream.Collectors.toSet;
-
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.OutputStreamWriter;
 import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
+
 import java.util.List;
-import java.util.Map;
-import java.util.Properties;
+
 import java.util.Random;
-import java.util.Set;
-import java.util.stream.IntStream;
+
 
 
 import edu.stanford.nlp.stats.Counter;
 import edu.stanford.nlp.stats.Counters;
 import edu.stanford.nlp.stats.IntCounter;
-import edu.stanford.nlp.util.PropertiesUtils;
-import gnu.trove.TIntArrayList;
+
 
 
 public class Util {
 	public static void main(String[] args) throws Exception {
-		FileInputStream fis = new FileInputStream(args[0]);
-		Properties properties = new Properties();
-		properties.load(fis);    
-		fis.close();
-		
-		Parameters parameters = new Parameters(properties);
-		
-		//prepareWord2VecCorpus(properties, parameters);
-		Random random = new Random(System.currentTimeMillis());
-		
-		
-                
+		int a  = 10;
+		a -= -3+4;
+		System.out.println(a);
 		
 	}
 	
-	public static double relu(double x) {
-		return Math.max(0, x);
+	public static double exp(double x) {
+		if(x>50) x=50;
+		else if(x<-50) x=-50;
+		return Math.exp(x);
 	}
 	
 	public static double sigmoid(double x) {
+		if(x>50) x=50;
+		else if(x<-50) x=-50;
 		return 1.0/(1+Math.exp(-x));
 	}
+	
+	
 
 	public static List<String> generateDict(List<String> str, int cutOff)
 	  {

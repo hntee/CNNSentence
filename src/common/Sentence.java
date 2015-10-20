@@ -1,3 +1,4 @@
+package common;
 import java.io.Serializable;
 import java.util.List;
 
@@ -12,4 +13,6 @@ public class Sentence implements Serializable{
 	public List<CoreLabel> tokens;
 	public TIntArrayList ids; // id in the E which corresponds to each token
 	public int polarity;
+	
+	
 }

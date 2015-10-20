@@ -1,3 +1,4 @@
+package cnn;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
@@ -13,6 +14,9 @@ import java.util.Set;
 import cn.fox.stanford.Tokenizer;
 import cn.fox.utils.ObjectSerializer;
 import cn.fox.utils.ObjectShuffle;
+import common.Sentence;
+import common.Tool;
+import common.Util;
 import edu.stanford.nlp.io.IOUtils;
 import edu.stanford.nlp.ling.CoreLabel;
 import edu.stanford.nlp.util.PropertiesUtils;
@@ -47,7 +51,7 @@ public class CNNSentence implements Serializable {
 		
 		/*
 		 *  load all the positive and negative sentences.
-		 *  For simpleness, we only take the first 500 sentences in the positive and negative files
+		 *  For simpleness, we only take the first MAX_SENTENCE sentences in the positive and negative files
 		 */
 		List<Sentence> positiveSentences = new ArrayList<>();
 		BufferedReader br = new BufferedReader(new InputStreamReader(new FileInputStream("data/rt-polarity.pos"), "utf-8"));
@@ -106,7 +110,6 @@ public class CNNSentence implements Serializable {
 			trainSet.add(negativeSentences.get(index));
 		}
 		
-		// shuffle the training and test set
 				
 		
 		CNNSentence cnnSentence = new CNNSentence(parameters);
