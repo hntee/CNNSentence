@@ -197,9 +197,12 @@ public class RNNSentence {
 		for (int iter = 0; iter < parameters.maxIter; ++iter) {
 			
 			rnn.process(trainSet);
-			evaluate(testSet);
+			
+			if (iter>0 && iter % 20 == 0)
+				evaluate(testSet);
 		}
 		
+		evaluate(testSet);
 	}
 	
 	public double evaluate(List<Sentence> testSet)
@@ -209,6 +212,7 @@ public class RNNSentence {
         for(Sentence sentence:testSet) {
         	
     		double[] Y = rnn.predict(sentence);
+        	//double[] Y = rnn.predictWithMaxPooling(sentence);
     		
     		if(sentence.polarity==1 && Y[0]>Y[1])
     			correct++;

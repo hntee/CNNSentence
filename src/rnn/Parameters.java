@@ -58,7 +58,7 @@ public class Parameters {
 	  
 	  public boolean sentenceIndependent = true;
 	  
-	  
+	  public double s0InitValue = 0;
 		
 	  public Parameters(Properties properties) {
 	    setProperties(properties);
@@ -76,6 +76,7 @@ public class Parameters {
 		alpha = PropertiesUtils.getDouble(props, "alpha", alpha);
 		beta = PropertiesUtils.getDouble(props, "beta", beta);
 		sentenceIndependent = PropertiesUtils.getBool(props, "sentenceIndependent", sentenceIndependent);
+		s0InitValue = PropertiesUtils.getDouble(props, "s0InitValue", s0InitValue);
 	  }
 	
 	 	
@@ -94,6 +95,7 @@ public class Parameters {
 		System.out.printf("beta = %.2g%n", beta);
 		
 		System.out.printf("sentenceIndependent = %b%n", sentenceIndependent);
+		System.out.printf("s0InitValue = %.2g%n", s0InitValue);
 		
 		System.out.println(SEPARATOR);
 	  }

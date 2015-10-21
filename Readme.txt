@@ -18,10 +18,7 @@ title     = {Seeing Stars: Exploiting Class Relationships for Sentiment Categori
 
 
 Data: October 20th, 2015
-I have added a recurrent neural network to classify a sentence. In the current configuration, the accuracy can achieve 66% approximately.
-I think RNN is not suitable for this task because the gold answers are hard to define that leads the training failed.
-When training, I consider each token as a training example and take the label of the whole sentence as the label of the example which is not
-accurate and noisy.
+I have added a recurrent neural network to classify a sentence. In the current configuration, the accuracy can achieve 70% approximately.
 All the ideas and code are reference Mikolov's doctor thesis.
 
 Mikolov Tomas: Statistical Language Models based on Neural Networks. PhD thesis, Brno University of Technology, 2012.
