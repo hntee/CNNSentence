@@ -24,6 +24,7 @@ public class CNN implements Serializable {
 	public List<double[][]> Woes; // correspond to filter
 	public double[] Bo;
 	
+	// eg* is for saving the gradient of the corresponding matrix
 	public double[][] eg2E;
 	public List<double[][]> eg2filterWs;
 	public List<double[]> eg2filterBs;
@@ -41,12 +42,12 @@ public class CNN implements Serializable {
 		this.E = E;
 		
 		Random random = new Random(System.currentTimeMillis());
-		filterWs = new ArrayList<>();
-		eg2filterWs = new ArrayList<>();
-		filterBs = new ArrayList<>();
-		eg2filterBs = new ArrayList<>();
-		Woes = new ArrayList<>();
-		eg2Woes = new ArrayList<>();
+		this.filterWs = new ArrayList<>();
+		this.eg2filterWs = new ArrayList<>();
+		this.filterBs = new ArrayList<>();
+		this.eg2filterBs = new ArrayList<>();
+		this.Woes = new ArrayList<>();
+		this.eg2Woes = new ArrayList<>();
 		for(int k=0;k<parameters.filterNumber;k++) {
 			/*
 			 * We catenate all the embeddings in the window as the input of the filter and
@@ -54,6 +55,10 @@ public class CNN implements Serializable {
 			 * As the filter is convolving in the sentence, each output node will form a line whose
 			 * points correspond to the convolution steps.  
 			 */
+			
+			// 1: filterW[300][3*50]
+			// 2: filterW[300][4*50]
+			// 2: filterW[300][5*50]
 			double[][] filterW = new double[parameters.filterMapNumber][parameters.filterWindowSize[k]*parameters.embeddingSize];
 			double[][] eg2filterW = new double[filterW.length][filterW[0].length];
 			for(int i=0;i<filterW.length;i++) {
@@ -61,16 +66,17 @@ public class CNN implements Serializable {
 					filterW[i][j] = random.nextDouble() * 2 * parameters.initRange - parameters.initRange;
 				}
 			}
-			filterWs.add(filterW);
-			eg2filterWs.add(eg2filterW);
+			this.filterWs.add(filterW);
+			this.eg2filterWs.add(eg2filterW);
 			double[] filterB = new double[parameters.filterMapNumber];
 			double[] eg2filterB = new double[filterB.length];
 			for(int i=0;i<filterB.length;i++) {
 				filterB[i] = random.nextDouble() * 2 * parameters.initRange - parameters.initRange;
 			}
-			filterBs.add(filterB);
-			eg2filterBs.add(eg2filterB);
+			this.filterBs.add(filterB);
+			this.eg2filterBs.add(eg2filterB);
 			
+			// Wo: [1][300]
 			double[][] Wo = new double[parameters.outputSize][parameters.filterMapNumber];
 			double[][] eg2Wo = new double[Wo.length][Wo[0].length]; 
 			for(int i=0;i<Wo.length;i++) {
@@ -78,54 +84,55 @@ public class CNN implements Serializable {
 					Wo[i][j] = random.nextDouble() * 2 * parameters.initRange - parameters.initRange;
 				}
 			}
-			Woes.add(Wo);
-			eg2Woes.add(eg2Wo);
+			this.Woes.add(Wo);
+			this.eg2Woes.add(eg2Wo);
 			
 			
 		}
 		
-		Bo = new double[parameters.outputSize];
-		for(int i=0;i<Bo.length;i++) {
-			Bo[i] = random.nextDouble() * 2 * parameters.initRange - parameters.initRange;
+		this.Bo = new double[parameters.outputSize];
+		for(int i=0;i<this.Bo.length;i++) {
+			this.Bo[i] = random.nextDouble() * 2 * parameters.initRange - parameters.initRange;
 		}
-		eg2Bo = new double[Bo.length];
+		this.eg2Bo = new double[this.Bo.length];
 		
-		eg2E = new double[E.length][E[0].length];
+		this.eg2E = new double[E.length][E[0].length];
 		
 	}
 	
 	public double[] predict(Sentence ex) throws Exception {
 		List<double[][]> Ses = new ArrayList<>();
-		for(int filterIdx=0;filterIdx<parameters.filterNumber;filterIdx++) {
+		for(int filterIdx=0;filterIdx<this.parameters.filterNumber;filterIdx++) {
 			// input -> convolutional map
-			int timeToConvol = ex.tokens.size()-parameters.filterWindowSize[filterIdx]+1; // the times to convolute
+			int timeToConvol = ex.tokens.size()-this.parameters.filterWindowSize[filterIdx]+1; // the times to convolute
 			if(timeToConvol<=0)
 				timeToConvol = 1; // sentence is less than window
 			
-			double[][] S = new double[timeToConvol][parameters.filterMapNumber]; // S[k][j]
+			double[][] S = new double[timeToConvol][this.parameters.filterMapNumber]; // S[k][j]
 			for(int k=0;k<timeToConvol;k++) { // k corresponds the begin position of each convolution
 				
 				int offset = 0;
-				for(int wordCount=0;wordCount<parameters.filterWindowSize[filterIdx];wordCount++) {
+				for(int wordCount=0;wordCount<this.parameters.filterWindowSize[filterIdx];wordCount++) {
 					int wordIdx = k+wordCount;
 					double[] emb = null;
 					if(wordIdx<=ex.tokens.size()-1) {
-						emb = E[ex.ids.get(wordIdx)];
+						emb = this.E[ex.ids.get(wordIdx)];
 					} else {
-						emb = E[owner.getWordID(Parameters.PADDING)];
+						emb = this.E[this.owner.getWordID(Parameters.PADDING)];
 					}
 					
-					for(int j=0;j<parameters.filterMapNumber;j++) {
-						for(int m=0;m<parameters.embeddingSize;m++) {
-							S[k][j] += filterWs.get(filterIdx)[j][offset+m]*emb[m]; // W*Z
+					for(int j=0;j<this.parameters.filterMapNumber;j++) {
+						for(int m=0;m<this.parameters.embeddingSize;m++) {
+							// k是以某个长度(3)来做卷积的第k行，每一次都把3个单词(50维向量)卷成一个300维的向量
+							S[k][j] += this.filterWs.get(filterIdx)[j][offset+m]*emb[m]; // W*Z
 						}
 					}
-					offset += parameters.embeddingSize;
+					offset += this.parameters.embeddingSize;
 				}
 				
 				
-				for(int j=0;j<parameters.filterMapNumber;j++) {
-					S[k][j] += filterBs.get(filterIdx)[j];  // W*Z+B
+				for(int j=0;j<this.parameters.filterMapNumber;j++) {
+					S[k][j] += this.filterBs.get(filterIdx)[j];  // W*Z+B
 					//u2[k][j] = S[k][j];
 					S[k][j] = Util.sigmoid(S[k][j]); // activation
 				}
@@ -135,7 +142,7 @@ public class CNN implements Serializable {
 			}
 			
 			
-			Ses.add(S);
+			Ses.add(S); // Ses.size() == this.parameters.filterNumber 
 
 		}
 		
@@ -143,12 +150,13 @@ public class CNN implements Serializable {
 		List<double []> Xes = new ArrayList<>();
 		List<int[]> maxRemembers = new ArrayList<>(); // record the max point in each column of S
 		for(double[][] S:Ses) {
-			double[] X = new double[parameters.filterMapNumber];
+			double[] X = new double[this.parameters.filterMapNumber];
 			int[] maxRemember = new int[X.length];
 			Xes.add(X);
 			maxRemembers.add(maxRemember);
 			
-			if(parameters.pooling==1) {
+			// X -> [1, 300]
+			if(this.parameters.pooling==1) {
 				for(int j=0;j<X.length;j++) {
 					double sum = 0;
 					for(int k=0;k<S.length;k++) {
@@ -156,7 +164,7 @@ public class CNN implements Serializable {
 					}
 					X[j] = sum/S.length;
 				}
-			} else if(parameters.pooling==2) {
+			} else if(this.parameters.pooling==2) {
 				for(int j=0;j<X.length;j++) {
 					double max = S[0][j];
 					int maxK = 0;
@@ -177,14 +185,14 @@ public class CNN implements Serializable {
 		}
 		
 		// X -> Y, a logistic regression
-		double[] Y = new double[parameters.outputSize];
+		double[] Y = new double[this.parameters.outputSize];
 		for(int i=0;i<Y.length;i++) {
-			for(int filterIdx=0;filterIdx<parameters.filterNumber;filterIdx++) {
-				for(int j=0;j<parameters.filterMapNumber;j++) {
-					Y[i] += Woes.get(filterIdx)[i][j]*Xes.get(filterIdx)[j]; // Wo*X
+			for(int filterIdx=0;filterIdx<this.parameters.filterNumber;filterIdx++) {
+				for(int j=0;j<this.parameters.filterMapNumber;j++) {
+					Y[i] += this.Woes.get(filterIdx)[i][j]*Xes.get(filterIdx)[j]; // Wo*X
 				}
 			}
-			Y[i] += Bo[i]; // Wo*X+Bo
+			Y[i] += this.Bo[i]; // Wo*X+Bo
 			Y[i] = Util.sigmoid(Y[i]); // sigmoid activation
 		}
 		
@@ -192,7 +200,7 @@ public class CNN implements Serializable {
 	}
 	
 	public GradientKeeper process(List<Sentence> examples) throws Exception {
-		GradientKeeper keeper = new GradientKeeper(parameters, this);
+		GradientKeeper keeper = new GradientKeeper(this.parameters, this);
 		
 		double loss = 0;
 				
@@ -204,38 +212,38 @@ public class CNN implements Serializable {
 			List<double[][]> Ses = new ArrayList<>();
 			List<double[][]> gradSes = new ArrayList<>();
 			//List<double[][]> u2s = new ArrayList<>();
-			for(int filterIdx=0;filterIdx<parameters.filterNumber;filterIdx++) {
+			for(int filterIdx=0;filterIdx<this.parameters.filterNumber;filterIdx++) {
 				// input -> convolutional map
-				int timeToConvol = ex.tokens.size()-parameters.filterWindowSize[filterIdx]+1; // the times to convolute
+				int timeToConvol = ex.tokens.size()-this.parameters.filterWindowSize[filterIdx]+1; // the times to convolute
 				if(timeToConvol<=0)
 					timeToConvol = 1; // sentence is less than window
 				
-				double[][] S = new double[timeToConvol][parameters.filterMapNumber]; // S[k][j]
+				double[][] S = new double[timeToConvol][this.parameters.filterMapNumber]; // S[k][j]
 				double[][] gradS = new double[S.length][S[0].length];
 				//double[][] u2 = new double[S.length][S[0].length];
 				for(int k=0;k<timeToConvol;k++) { // k corresponds the begin position of each convolution
 					
 					int offset = 0;
-					for(int wordCount=0;wordCount<parameters.filterWindowSize[filterIdx];wordCount++) {
+					for(int wordCount=0;wordCount<this.parameters.filterWindowSize[filterIdx];wordCount++) {
 						int wordIdx = k+wordCount;
 						double[] emb = null;
 						if(wordIdx<=ex.tokens.size()-1) {
-							emb = E[ex.ids.get(wordIdx)];
+							emb = this.E[ex.ids.get(wordIdx)];
 						} else {
-							emb = E[owner.getWordID(Parameters.PADDING)];
+							emb = this.E[this.owner.getWordID(Parameters.PADDING)];
 						}
 						
-						for(int j=0;j<parameters.filterMapNumber;j++) {
-							for(int m=0;m<parameters.embeddingSize;m++) {
-								S[k][j] += filterWs.get(filterIdx)[j][offset+m]*emb[m]; // W*Z
+						for(int j=0;j<this.parameters.filterMapNumber;j++) {
+							for(int m=0;m<this.parameters.embeddingSize;m++) {
+								S[k][j] += this.filterWs.get(filterIdx)[j][offset+m]*emb[m]; // W*Z
 							}
 						}
-						offset += parameters.embeddingSize;
+						offset += this.parameters.embeddingSize;
 					}
 					
 					
-					for(int j=0;j<parameters.filterMapNumber;j++) {
-						S[k][j] += filterBs.get(filterIdx)[j];  // W*Z+B
+					for(int j=0;j<this.parameters.filterMapNumber;j++) {
+						S[k][j] += this.filterBs.get(filterIdx)[j];  // W*Z+B
 						//u2[k][j] = S[k][j];
 						S[k][j] = Util.sigmoid(S[k][j]); // activation
 					}
@@ -255,14 +263,14 @@ public class CNN implements Serializable {
 			List<double []> gradXes = new ArrayList<>();
 			List<int[]> maxRemembers = new ArrayList<>(); // record the max point in each column of S
 			for(double[][] S:Ses) {
-				double[] X = new double[parameters.filterMapNumber];
+				double[] X = new double[this.parameters.filterMapNumber];
 				double[] gradX = new double[X.length];
 				int[] maxRemember = new int[X.length];
 				Xes.add(X);
 				gradXes.add(gradX);
 				maxRemembers.add(maxRemember);
 				
-				if(parameters.pooling==1) {
+				if(this.parameters.pooling==1) { //avg pooling
 					for(int j=0;j<X.length;j++) {
 						double sum = 0;
 						for(int k=0;k<S.length;k++) {
@@ -270,7 +278,7 @@ public class CNN implements Serializable {
 						}
 						X[j] = sum/S.length;
 					}
-				} else if(parameters.pooling==2) {
+				} else if(this.parameters.pooling==2) { // max pooling
 					for(int j=0;j<X.length;j++) {
 						double max = S[0][j];
 						int maxK = 0;
@@ -291,27 +299,30 @@ public class CNN implements Serializable {
 			}
 			
 			// X -> Y, a logistic regression
-			double[] Y = new double[parameters.outputSize];
+			double[] Y = new double[this.parameters.outputSize];
 			for(int i=0;i<Y.length;i++) {
-				for(int filterIdx=0;filterIdx<parameters.filterNumber;filterIdx++) {
-					for(int j=0;j<parameters.filterMapNumber;j++) {
-						Y[i] += Woes.get(filterIdx)[i][j]*Xes.get(filterIdx)[j]; // Wo*X
+				for(int filterIdx=0;filterIdx<this.parameters.filterNumber;filterIdx++) {
+					for(int j=0;j<this.parameters.filterMapNumber;j++) {
+						Y[i] += this.Woes.get(filterIdx)[i][j]*Xes.get(filterIdx)[j]; // Wo*X
 					}
 				}
-				Y[i] += Bo[i]; // Wo*X+Bo
+				Y[i] += this.Bo[i]; // Wo*X+Bo
 				Y[i] = Util.sigmoid(Y[i]); // sigmoid activation
 			}
 			
+			// calculate the loss
+			for (int i=0;i<this.parameters.outputSize;i++) {
+				loss += -(ex.category[i]*Math.log(Y[i])+(1-ex.category[i])*Math.log(1-Y[i]))/examples.size();
+			}
 			
-			loss += -(ex.polarity*Math.log(Y[0])+(1-ex.polarity)*Math.log(1-Y[0]))/examples.size();
 			
 			// Y -> X
-			for(int i=0;i<parameters.outputSize;i++) {
-				double delta1 = (Y[i]-ex.polarity)/examples.size();
-				for(int filterIdx=0;filterIdx<parameters.filterNumber;filterIdx++) {
-					for(int j=0;j<parameters.filterMapNumber;j++) {
+			for(int i=0;i<this.parameters.outputSize;i++) {
+				double delta1 = (Y[i]-ex.category[i])/examples.size();
+				for(int filterIdx=0;filterIdx<this.parameters.filterNumber;filterIdx++) {
+					for(int j=0;j<this.parameters.filterMapNumber;j++) {
 						keeper.gradWoes.get(filterIdx)[i][j] += delta1*Xes.get(filterIdx)[j];
-						gradXes.get(filterIdx)[j] += delta1*Woes.get(filterIdx)[i][j];
+						gradXes.get(filterIdx)[j] += delta1*this.Woes.get(filterIdx)[i][j];
 					}
 				}
 				keeper.gradBo[i] += delta1;
@@ -324,11 +335,11 @@ public class CNN implements Serializable {
 				int[] maxRemember = maxRemembers.get(sCount);
 				double[] gradX = gradXes.get(sCount);
 				for(int j=0;j<S[0].length;j++) {
-					if(parameters.pooling==1) {
+					if(this.parameters.pooling==1) {
 						for(int k=0;k<S.length;k++) {
 							gradS[k][j] = gradX[j];
 						}
-					} else if(parameters.pooling==2) {
+					} else if(this.parameters.pooling==2) {
 						for(int k=0;k<S.length;k++) {
 							if(maxRemember[j]==k)
 								gradS[k][j] = gradX[j];
@@ -351,26 +362,26 @@ public class CNN implements Serializable {
 				for(int k=0;k<gradS.length;k++) {
 					
 					int offset = 0;
-					for(int wordCount=0;wordCount<parameters.filterWindowSize[sCount];wordCount++) {
+					for(int wordCount=0;wordCount<this.parameters.filterWindowSize[sCount];wordCount++) {
 						int wordIdx = k+wordCount;
 						double[] emb = null;
 						int embId = -1;
 						if(wordIdx<=ex.tokens.size()-1) {
 							embId = ex.ids.get(wordIdx);
 						} else {
-							embId = owner.getWordID(Parameters.PADDING);
+							embId = this.owner.getWordID(Parameters.PADDING);
 						}
-						emb = E[embId];
+						emb = this.E[embId];
 
 						for(int j=0;j<gradS[0].length;j++) {
 							double delta2 = gradS[k][j]*S[k][j]*(1-S[k][j]);
-							for(int m=0;m<parameters.embeddingSize;m++) {
+							for(int m=0;m<this.parameters.embeddingSize;m++) {
 								keeper.gradWs.get(sCount)[j][offset+m] += delta2*emb[m];
-								keeper.gradE[embId][m] += delta2*filterWs.get(sCount)[j][offset+m];
+								keeper.gradE[embId][m] += delta2*this.filterWs.get(sCount)[j][offset+m];
 							}
 							keeper.gradBs.get(sCount)[j] += delta2;
 						}
-						offset += parameters.embeddingSize;
+						offset += this.parameters.embeddingSize;
 					}
 				
 				}
@@ -386,8 +397,8 @@ public class CNN implements Serializable {
 	    	double[][] gradW = keeper.gradWs.get(k);
 		    for (int i = 0; i < gradW.length; ++i) {
 		        for (int j = 0; j < gradW[i].length; ++j) {
-		          loss += parameters.regParameter * filterWs.get(k)[i][j] * filterWs.get(k)[i][j] / 2.0;
-		          gradW[i][j] += parameters.regParameter * filterWs.get(k)[i][j];
+		          loss += this.parameters.regParameter * this.filterWs.get(k)[i][j] * this.filterWs.get(k)[i][j] / 2.0;
+		          gradW[i][j] += this.parameters.regParameter * this.filterWs.get(k)[i][j];
 		        }
 		      }
 	    }
@@ -395,8 +406,8 @@ public class CNN implements Serializable {
 		for(int k=0;k<keeper.gradBs.size();k++) {
 			double[] gradB = keeper.gradBs.get(k);
 			for(int i=0; i < gradB.length; i++) {
-				loss += parameters.regParameter * filterBs.get(k)[i] * filterBs.get(k)[i]/ 2.0;
-				gradB[i] += parameters.regParameter * filterBs.get(k)[i];
+				loss += this.parameters.regParameter * this.filterBs.get(k)[i] * this.filterBs.get(k)[i]/ 2.0;
+				gradB[i] += this.parameters.regParameter * this.filterBs.get(k)[i];
 			}
 		}
 		
@@ -404,25 +415,25 @@ public class CNN implements Serializable {
 			double[][] gradWo = keeper.gradWoes.get(k);
 			for(int i=0; i< gradWo.length; i++) {
 				for(int j=0; j < gradWo[0].length;j++) {
-					loss += parameters.regParameter * Woes.get(k)[i][j] * Woes.get(k)[i][j]/ 2.0;
-					gradWo[i][j] += parameters.regParameter * Woes.get(k)[i][j];
+					loss += this.parameters.regParameter * this.Woes.get(k)[i][j] * this.Woes.get(k)[i][j]/ 2.0;
+					gradWo[i][j] += this.parameters.regParameter * this.Woes.get(k)[i][j];
 				}
 			}
 		}
 		
 		for(int i=0;i<keeper.gradBo.length;i++) {
-			loss += parameters.regParameter * Bo[i] * Bo[i]/ 2.0;
-			keeper.gradBo[i] += parameters.regParameter * Bo[i];
+			loss += this.parameters.regParameter * this.Bo[i] * this.Bo[i]/ 2.0;
+			keeper.gradBo[i] += this.parameters.regParameter * this.Bo[i];
 		}
 		
 		for(int i=0; i< keeper.gradE.length; i++) {
 			for(int j=0; j < keeper.gradE[0].length;j++) {
-				loss += parameters.regParameter * E[i][j] * E[i][j]/ 2.0;
-				keeper.gradE[i][j] += parameters.regParameter * E[i][j];
+				loss += this.parameters.regParameter * this.E[i][j] * this.E[i][j]/ 2.0;
+				keeper.gradE[i][j] += this.parameters.regParameter * this.E[i][j];
 			}
 		}
 		
-		if(debug)
+		if(this.debug)
 			System.out.println("Cost = " + loss);
 		
 		return keeper;
@@ -430,43 +441,43 @@ public class CNN implements Serializable {
 	
 	public void updateWeights(GradientKeeper keeper) {
 		// ada-gradient
-		for(int k=0;k<filterWs.size();k++) {
-	    	double[][] filterW = filterWs.get(k);
+		for(int k=0;k<this.filterWs.size();k++) {
+	    	double[][] filterW = this.filterWs.get(k);
 		    for (int i = 0; i < filterW.length; ++i) {
 		        for (int j = 0; j < filterW[i].length; ++j) {
-		          eg2filterWs.get(k)[i][j] += keeper.gradWs.get(k)[i][j] * keeper.gradWs.get(k)[i][j];
-		          filterW[i][j] -= parameters.adaAlpha * keeper.gradWs.get(k)[i][j] / Math.sqrt(eg2filterWs.get(k)[i][j] + parameters.adaEps);
+		          this.eg2filterWs.get(k)[i][j] += keeper.gradWs.get(k)[i][j] * keeper.gradWs.get(k)[i][j];
+		          filterW[i][j] -= this.parameters.adaAlpha * keeper.gradWs.get(k)[i][j] / Math.sqrt(this.eg2filterWs.get(k)[i][j] + this.parameters.adaEps);
 		        }
 		      }
 	    }
 		
-		for(int k=0;k<filterBs.size();k++) {
-			double[] filterB = filterBs.get(k);
+		for(int k=0;k<this.filterBs.size();k++) {
+			double[] filterB = this.filterBs.get(k);
 			for(int i=0; i < filterB.length; i++) {
-				eg2filterBs.get(k)[i] += keeper.gradBs.get(k)[i] * keeper.gradBs.get(k)[i];
-				filterB[i] -= parameters.adaAlpha * keeper.gradBs.get(k)[i] / Math.sqrt(eg2filterBs.get(k)[i] + parameters.adaEps); 
+				this.eg2filterBs.get(k)[i] += keeper.gradBs.get(k)[i] * keeper.gradBs.get(k)[i];
+				filterB[i] -= this.parameters.adaAlpha * keeper.gradBs.get(k)[i] / Math.sqrt(this.eg2filterBs.get(k)[i] + this.parameters.adaEps); 
 			}
 		}
 		
-		for(int k=0;k<Woes.size();k++) {
-			double[][] Wo = Woes.get(k);
+		for(int k=0;k<this.Woes.size();k++) {
+			double[][] Wo = this.Woes.get(k);
 			for(int i=0; i< Wo.length; i++) {
 				for(int j=0; j < Wo[0].length;j++) {
-					eg2Woes.get(k)[i][j] += keeper.gradWoes.get(k)[i][j] * keeper.gradWoes.get(k)[i][j];
-					Wo[i][j] -= parameters.adaAlpha * keeper.gradWoes.get(k)[i][j] /  Math.sqrt(eg2Woes.get(k)[i][j] + parameters.adaEps);
+					this.eg2Woes.get(k)[i][j] += keeper.gradWoes.get(k)[i][j] * keeper.gradWoes.get(k)[i][j];
+					Wo[i][j] -= this.parameters.adaAlpha * keeper.gradWoes.get(k)[i][j] /  Math.sqrt(this.eg2Woes.get(k)[i][j] + this.parameters.adaEps);
 				}
 			}
 		}
 		
-		for(int i=0;i<Bo.length;i++) {
-			eg2Bo[i] += keeper.gradBo[i] * keeper.gradBo[i];
-			Bo[i] -= parameters.adaAlpha * keeper.gradBo[i] / Math.sqrt(eg2Bo[i] + parameters.adaEps);
+		for(int i=0;i<this.Bo.length;i++) {
+			this.eg2Bo[i] += keeper.gradBo[i] * keeper.gradBo[i];
+			this.Bo[i] -= this.parameters.adaAlpha * keeper.gradBo[i] / Math.sqrt(this.eg2Bo[i] + this.parameters.adaEps);
 		}
 		
-		for(int i=0; i< E.length; i++) {
-			for(int j=0; j < E[0].length;j++) {
-				eg2E[i][j] += keeper.gradE[i][j] * keeper.gradE[i][j];
-				E[i][j] -= parameters.adaAlpha * keeper.gradE[i][j] / Math.sqrt(eg2E[i][j] + parameters.adaEps);
+		for(int i=0; i< this.E.length; i++) {
+			for(int j=0; j < this.E[0].length;j++) {
+				this.eg2E[i][j] += keeper.gradE[i][j] * keeper.gradE[i][j];
+				this.E[i][j] -= this.parameters.adaAlpha * keeper.gradE[i][j] / Math.sqrt(this.eg2E[i][j] + this.parameters.adaEps);
 			}
 		}
 		
@@ -486,25 +497,24 @@ class GradientKeeper {
 	
 	// initialize gradient matrixes, their dimensions are identical to the corresponding matrixes.
 	public GradientKeeper(Parameters parameters, CNN cnn) {
-		gradWs = new ArrayList<>();
-		gradBs = new ArrayList<>();
-		gradWoes = new ArrayList<>();
+		this.gradWs = new ArrayList<>();
+		this.gradBs = new ArrayList<>();
+		this.gradWoes = new ArrayList<>();
 		for(int k=0;k<parameters.filterNumber;k++) {
 			
 			double[][] gradW = new double[cnn.filterWs.get(k).length][cnn.filterWs.get(k)[0].length];
-			gradWs.add(gradW);
+			this.gradWs.add(gradW);
 			
 			double[] gradB = new double[cnn.filterBs.get(k).length];
-			gradBs.add(gradB);
+			this.gradBs.add(gradB);
 			
 			double[][] gradWo = new double[cnn.Woes.get(k).length][cnn.Woes.get(k)[0].length];
-			gradWoes.add(gradWo);
-			
+			this.gradWoes.add(gradWo);
 			
 		}
 		
-		gradBo = new double[cnn.Bo.length];
-		gradE = new double[cnn.E.length][cnn.E[0].length];
+		this.gradBo = new double[cnn.Bo.length];
+		this.gradE = new double[cnn.E.length][cnn.E[0].length];
 			
 	}
 }
