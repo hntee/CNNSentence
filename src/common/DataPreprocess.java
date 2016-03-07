@@ -23,7 +23,8 @@ public class DataPreprocess {
 	private static final String ARTICLEPATH = "data/20news-bydate";
 	private static final String TRAIN_PATH = ARTICLEPATH + "/20news-bydate-train";
 	private static final String TEST_PATH = ARTICLEPATH + "/20news-bydate-test";
-
+	private static String delimiter;
+	
 	public static List<Sentence> trainData = new ArrayList<>();
 	public static List<Sentence> testData = new ArrayList<>();
 	
@@ -39,7 +40,7 @@ public class DataPreprocess {
 	
 	private static <T> int checkType(T path) {
 //		System.out.println(path);
-		String categoryName =  path.toString().split("\\\\")[3];
+		String categoryName =  path.toString().split(delimiter)[3];
 //		System.out.println(categoryName);
 		return typeMap.get(categoryName);
 
@@ -75,14 +76,23 @@ public class DataPreprocess {
 	private static void initData() throws IOException {
 
 		Stream<Path> paths = Files.walk(Paths.get(ARTICLEPATH));
-		paths.filter(p -> p.toString().split("\\\\").length > 4)
+		paths.filter(p -> p.toString().split(delimiter).length > 4)
              .map(p -> p.toString())
              .forEach(p -> processData(p, trainData, testData));
 				               
 	}
 	  
+	private static void initDelimiter() {
+		String os = System.getProperty("os.name");
+		if (os.contains("Windows")) {
+			delimiter = "\\\\";
+		} else {
+			delimiter = "/";
+		}
+	}
 	
 	public static void init() throws IOException {
+		initDelimiter();
 		initTypeMap();
 		initData();
 	}

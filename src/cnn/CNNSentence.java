@@ -49,7 +49,7 @@ public class CNNSentence implements Serializable {
 		 *  For simpleness, we only take the first MAX_SENTENCE sentences in the positive and negative files
 		 */
 		DataPreprocess.init();
-		DataPreprocess.chop(100);
+		DataPreprocess.chop(400);
 		
 		List<Sentence> trainSet = DataPreprocess.trainData;
 		List<Sentence> testSet = DataPreprocess.testData;
